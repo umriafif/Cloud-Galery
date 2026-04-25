@@ -49,7 +49,18 @@ function resolveManagedPath(baseDir, relativePath) {
 async function moveFromTemp(tempPath, targetBaseDir, relativePath) {
   const destination = resolveManagedPath(targetBaseDir, relativePath);
   await fs.mkdir(path.dirname(destination), { recursive: true });
-  await fs.rename(tempPath, destination);
+
+  try {
+    await fs.rename(tempPath, destination);
+  } catch (error) {
+    if (error?.code !== 'EXDEV') {
+      throw error;
+    }
+
+    await fs.copyFile(tempPath, destination);
+    await fs.unlink(tempPath);
+  }
+
   return destination;
 }
 
