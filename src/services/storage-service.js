@@ -46,45 +46,10 @@ function resolveManagedPath(baseDir, relativePath) {
   return absolutePath;
 }
 
-function isCrossDeviceRenameError(error) {
-  if (!error) {
-    return false;
-  }
-
-  if (error.code === 'EXDEV') {
-    return true;
-  }
-
-  return /cross-device link/i.test(String(error.message || ''));
-}
-
 async function moveFromTemp(tempPath, targetBaseDir, relativePath) {
   const destination = resolveManagedPath(targetBaseDir, relativePath);
   const destinationDir = path.dirname(destination);
   await fs.mkdir(destinationDir, { recursive: true });
-
-  let shouldTryRename = true;
-  try {
-    const [sourceStat, targetDirStat] = await Promise.all([
-      fs.stat(tempPath),
-      fs.stat(destinationDir)
-    ]);
-    shouldTryRename = sourceStat.dev === targetDirStat.dev;
-  } catch (error) {
-    // If stat lookup fails, continue with rename-first strategy.
-    shouldTryRename = true;
-  }
-
-  if (shouldTryRename) {
-    try {
-      await fs.rename(tempPath, destination);
-      return destination;
-    } catch (error) {
-      if (!isCrossDeviceRenameError(error)) {
-        throw error;
-      }
-    }
-  }
 
   await fs.copyFile(tempPath, destination);
   await fs.unlink(tempPath);
