@@ -8,6 +8,33 @@ const { getBreadcrumbs } = require('../services/folder-service');
 
 const router = express.Router();
 
+function escapeXml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+function sendThumbnailPlaceholder(res, media) {
+  const label = media.media_type === 'video' ? 'Preview video tidak tersedia' : 'Preview gambar tidak tersedia';
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480" fill="none">
+      <rect width="640" height="480" rx="32" fill="#0f172a"/>
+      <rect x="24" y="24" width="592" height="432" rx="24" fill="#1e293b" stroke="#334155"/>
+      <circle cx="92" cy="92" r="22" fill="#14b8a6"/>
+      <path d="M174 204L258 136L344 248L404 192L512 324H132L174 204Z" fill="#334155"/>
+      <text x="50%" y="56%" dominant-baseline="middle" text-anchor="middle" fill="#f8fafc" font-size="28" font-family="Arial, sans-serif">${escapeXml(label)}</text>
+      <text x="50%" y="64%" dominant-baseline="middle" text-anchor="middle" fill="#94a3b8" font-size="18" font-family="Arial, sans-serif">${escapeXml(media.original_name)}</text>
+    </svg>
+  `.trim();
+
+  res.setHeader('Cache-Control', 'private, max-age=3600');
+  res.type('image/svg+xml');
+  res.send(svg);
+}
+
 router.get(
   '/media/:id',
   requireAuth,
@@ -44,10 +71,14 @@ router.get(
       return;
     }
 
-    const absolutePath = await resolveThumbnailPath(media);
-    res.setHeader('Cache-Control', 'private, max-age=86400');
-    res.type('image/jpeg');
-    res.sendFile(absolutePath);
+    try {
+      const absolutePath = await resolveThumbnailPath(media);
+      res.setHeader('Cache-Control', 'private, max-age=86400');
+      res.type('image/jpeg');
+      res.sendFile(absolutePath);
+    } catch (error) {
+      sendThumbnailPlaceholder(res, media);
+    }
   })
 );
 

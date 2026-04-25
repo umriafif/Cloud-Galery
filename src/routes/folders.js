@@ -9,8 +9,31 @@ const {
   getBreadcrumbs
 } = require('../services/folder-service');
 const { listMediaByFolder, createMediaFromUpload } = require('../services/media-service');
+const { wantsJsonResponse } = require('../utils/request');
 
 const router = express.Router();
+
+function buildUploadResponsePayload({ successCount, failed }) {
+  const failedCount = failed.length;
+
+  if (successCount > 0) {
+    return {
+      ok: true,
+      successCount,
+      failedCount,
+      failed,
+      message: `${successCount} file berhasil diunggah${failedCount > 0 ? `, ${failedCount} gagal.` : '.'}`
+    };
+  }
+
+  return {
+    ok: false,
+    successCount: 0,
+    failedCount,
+    failed,
+    message: failed.join(' | ') || 'Semua unggahan gagal diproses.'
+  };
+}
 
 router.post(
   '/folders',
@@ -33,6 +56,7 @@ router.get(
   requireAuth,
   asyncHandler(async (req, res) => {
     const folderId = Number(req.params.id);
+    const mediaQuery = String(req.query.q || '').trim();
     const folder = await getFolderByIdForUser(folderId, req.session.user);
 
     if (!folder) {
@@ -50,7 +74,8 @@ router.get(
       listMediaByFolder({
         folderId: folder.id,
         user: req.session.user,
-        cursor: req.query.cursor
+        cursor: req.query.cursor,
+        search: mediaQuery
       })
     ]);
 
@@ -59,7 +84,8 @@ router.get(
       folder,
       subfolders,
       breadcrumbs,
-      mediaPage
+      mediaPage,
+      mediaQuery
     });
   })
 );
@@ -73,6 +99,14 @@ router.post(
     const folder = await getFolderByIdForUser(folderId, req.session.user);
 
     if (!folder) {
+      if (wantsJsonResponse(req)) {
+        res.status(404).json({
+          ok: false,
+          message: 'Folder tujuan tidak ditemukan atau tidak dapat diakses.'
+        });
+        return;
+      }
+
       res.status(404).render('error', {
         title: 'Folder Tidak Ditemukan',
         statusCode: 404,
@@ -83,6 +117,14 @@ router.post(
 
     const uploads = req.files || [];
     if (uploads.length === 0) {
+      if (wantsJsonResponse(req)) {
+        res.status(400).json({
+          ok: false,
+          message: 'Pilih minimal satu file untuk diunggah.'
+        });
+        return;
+      }
+
       setFlash(req, 'error', 'Pilih minimal satu file untuk diunggah.');
       res.redirect(`/folders/${folder.id}`);
       return;
@@ -104,10 +146,17 @@ router.post(
       }
     }
 
-    if (successCount > 0) {
-      setFlash(req, failed.length > 0 ? 'warning' : 'success', `${successCount} file berhasil diunggah${failed.length > 0 ? `, ${failed.length} gagal.` : '.'}`);
+    const payload = buildUploadResponsePayload({ successCount, failed });
+
+    if (wantsJsonResponse(req)) {
+      res.status(payload.ok ? 200 : 400).json(payload);
+      return;
+    }
+
+    if (payload.ok) {
+      setFlash(req, failed.length > 0 ? 'warning' : 'success', payload.message);
     } else {
-      setFlash(req, 'error', failed.join(' | ') || 'Semua unggahan gagal diproses.');
+      setFlash(req, 'error', payload.message);
     }
 
     res.redirect(`/folders/${folder.id}`);

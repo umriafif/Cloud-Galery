@@ -17,22 +17,19 @@ const {
   getVideoMetadata,
   createVideoThumbnail
 } = require('./thumbnail-service');
-
-function inferMediaType(mimeType) {
-  if (String(mimeType).startsWith('image/')) {
-    return 'image';
-  }
-
-  if (String(mimeType).startsWith('video/')) {
-    return 'video';
-  }
-
-  return null;
-}
+const { detectMediaType } = require('../utils/media-types');
 
 function cleanTitleFromFilename(filename) {
   const base = path.parse(filename).name;
   return base.replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim() || 'Untitled';
+}
+
+function normalizeSearchQuery(value) {
+  return String(value || '').trim().replace(/\s+/g, ' ').slice(0, 120);
+}
+
+function escapeLikePattern(value) {
+  return value.replace(/[\\%_]/g, '\\$&');
 }
 
 function ownershipClause(alias, user) {
@@ -53,20 +50,30 @@ async function extractMetadataAndThumbnail({ mediaType, absoluteSourcePath, abso
   if (mediaType === 'image') {
     const metadata = await getImageMetadata(absoluteSourcePath);
     await createImageThumbnail(absoluteSourcePath, absoluteThumbnailPath);
-    return metadata;
+    return {
+      ...metadata,
+      thumbnailCreated: true
+    };
   }
 
   if (mediaType === 'video') {
     const metadata = await getVideoMetadata(absoluteSourcePath);
     await createVideoThumbnail(absoluteSourcePath, absoluteThumbnailPath);
-    return metadata;
+    return {
+      ...metadata,
+      thumbnailCreated: true
+    };
   }
 
   throw new Error('Format file tidak didukung.');
 }
 
 async function createMediaFromUpload({ file, folder, currentUser }) {
-  const mediaType = inferMediaType(file.mimetype);
+  const detection = detectMediaType({
+    mimeType: file.mimetype,
+    filename: file.originalname
+  });
+  const mediaType = detection.mediaType;
 
   if (!mediaType) {
     await removeIfExists(file.path);
@@ -75,7 +82,7 @@ async function createMediaFromUpload({ file, folder, currentUser }) {
 
   await ensureStorageDirectories();
 
-  const extension = path.extname(file.originalname || '').toLowerCase() || (mediaType === 'image' ? '.jpg' : '.mp4');
+  const extension = detection.extension || (mediaType === 'image' ? '.jpg' : '.mp4');
   const relativeStoragePath = buildRelativeStoragePath(extension);
   const relativeThumbnailPath = buildRelativeThumbnailPath();
   const absoluteStoragePath = resolveManagedPath(env.storage.uploadsDir, relativeStoragePath);
@@ -84,11 +91,24 @@ async function createMediaFromUpload({ file, folder, currentUser }) {
 
   try {
     await moveFromTemp(file.path, env.storage.uploadsDir, relativeStoragePath);
-    const metadata = await extractMetadataAndThumbnail({
-      mediaType,
-      absoluteSourcePath: absoluteStoragePath,
-      absoluteThumbnailPath
-    });
+    let metadata = {
+      width: null,
+      height: null,
+      durationSeconds: null,
+      thumbnailCreated: false
+    };
+    let status = 'ready';
+
+    try {
+      metadata = await extractMetadataAndThumbnail({
+        mediaType,
+        absoluteSourcePath: absoluteStoragePath,
+        absoluteThumbnailPath
+      });
+    } catch (processingError) {
+      status = 'failed';
+      await removeIfExists(absoluteThumbnailPath);
+    }
 
     const result = await query(
       `
@@ -109,7 +129,7 @@ async function createMediaFromUpload({ file, folder, currentUser }) {
           thumbnail_path,
           status
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ready')
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         folder?.id || null,
@@ -125,7 +145,8 @@ async function createMediaFromUpload({ file, folder, currentUser }) {
         metadata.height,
         metadata.durationSeconds,
         relativeStoragePath,
-        relativeThumbnailPath
+        metadata.thumbnailCreated ? relativeThumbnailPath : null,
+        status
       ]
     );
 
@@ -163,10 +184,37 @@ async function getMediaByIdForUser(mediaId, user) {
   return rows[0] || null;
 }
 
-async function listMediaByFolder({ folderId = null, user, cursor, limit = env.pagination.galleryPageSize }) {
+async function listMediaByFolder({
+  folderId = null,
+  user,
+  cursor,
+  limit = env.pagination.galleryPageSize,
+  search
+}) {
   const access = ownershipClause('m', user);
   const decodedCursor = decodeCursor(cursor);
+  const normalizedSearch = normalizeSearchQuery(search);
   const params = [folderId, ...access.params];
+
+  let searchSql = '';
+  if (normalizedSearch) {
+    const tokens = normalizedSearch
+      .split(' ')
+      .map((token) => token.trim())
+      .filter(Boolean)
+      .slice(0, 5);
+
+    if (tokens.length > 0) {
+      searchSql = `AND ${tokens
+        .map(() => '(m.original_name LIKE ? ESCAPE \'\\\\\' OR m.title LIKE ? ESCAPE \'\\\\\')')
+        .join(' AND ')}`;
+
+      for (const token of tokens) {
+        const pattern = `%${escapeLikePattern(token)}%`;
+        params.push(pattern, pattern);
+      }
+    }
+  }
 
   let cursorSql = '';
   if (decodedCursor) {
@@ -183,7 +231,7 @@ async function listMediaByFolder({ folderId = null, user, cursor, limit = env.pa
         u.name AS owner_name
       FROM media m
       INNER JOIN users u ON u.id = m.owner_id
-      WHERE m.folder_id <=> ? AND ${access.sql} ${cursorSql}
+      WHERE m.folder_id <=> ? AND ${access.sql} ${searchSql} ${cursorSql}
       ORDER BY m.created_at DESC, m.id DESC
       LIMIT ?
     `,
@@ -237,7 +285,7 @@ async function resolveOriginalPath(media) {
 
 async function resolveThumbnailPath(media) {
   if (!media.thumbnail_path) {
-    return resolveOriginalPath(media);
+    throw new Error('Thumbnail unavailable.');
   }
 
   const absolutePath = resolveManagedPath(env.storage.thumbnailsDir, media.thumbnail_path);

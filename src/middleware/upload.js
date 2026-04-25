@@ -1,6 +1,7 @@
 const path = require('node:path');
 const multer = require('multer');
 const env = require('../config/env');
+const { isSupportedMediaFile } = require('../utils/media-types');
 
 function createUploadMiddleware() {
   const storage = multer.diskStorage({
@@ -18,13 +19,17 @@ function createUploadMiddleware() {
       files: env.upload.maxFilesPerRequest
     },
     fileFilter: (req, file, callback) => {
-      const allowed = file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/');
+      const allowed = isSupportedMediaFile({
+        mimeType: file.mimetype,
+        filename: file.originalname
+      });
+
       if (allowed) {
         callback(null, true);
         return;
       }
 
-      const error = new Error('Hanya gambar dan video yang diperbolehkan.');
+      const error = new Error('Format file tidak didukung. Gunakan format foto atau video umum seperti JPG, PNG, WEBP, MP4, MOV, MKV, WEBM, AVI, dan sejenisnya.');
       error.statusCode = 400;
       callback(error);
     }

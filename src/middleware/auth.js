@@ -1,5 +1,6 @@
 const env = require('../config/env');
 const { formatBytes, formatDuration, formatDate } = require('../utils/formatters');
+const { getAcceptedMediaHint } = require('../utils/media-types');
 
 function setFlash(req, type, message) {
   req.session.flash = { type, message };
@@ -14,6 +15,9 @@ function injectLocals(req, res, next) {
   res.locals.formatDuration = formatDuration;
   res.locals.formatDate = formatDate;
   res.locals.appName = env.appName;
+  res.locals.acceptedMediaHint = getAcceptedMediaHint();
+  res.locals.maxUploadSizeMb = Math.round(env.upload.maxFileSizeBytes / (1024 * 1024));
+  res.locals.maxFilesPerRequest = env.upload.maxFilesPerRequest;
 
   delete req.session.flash;
   next();

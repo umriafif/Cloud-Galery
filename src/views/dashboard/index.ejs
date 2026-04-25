@@ -30,20 +30,50 @@
         <div class="flex items-center justify-between gap-3">
           <div>
             <h2 class="font-display text-xl font-bold text-slate-900 dark:text-white">Upload ke Root</h2>
-            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Unggah banyak foto atau video sekaligus.</p>
+            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Drag-and-drop atau pilih banyak foto dan video sekaligus.</p>
           </div>
           <span class="chip">Batch upload</span>
         </div>
 
-        <form action="/upload" method="post" enctype="multipart/form-data" class="mt-5 space-y-4">
-          <label class="panel-muted block cursor-pointer border-dashed p-5 text-center transition hover:border-accent-300 dark:hover:border-accent-700">
-            <input id="dashboard-upload" data-file-input type="file" name="media_files" multiple class="hidden" />
-            <div class="text-sm font-semibold text-slate-900 dark:text-white">Pilih file</div>
+        <form action="/upload" method="post" enctype="multipart/form-data" class="mt-5 space-y-4" data-upload-form>
+          <label
+            class="panel-muted block cursor-pointer border-2 border-dashed p-5 text-center transition hover:border-accent-300 dark:hover:border-accent-700"
+            data-dropzone
+          >
+            <input
+              id="dashboard-upload"
+              data-file-input
+              type="file"
+              name="media_files"
+              accept="<%= acceptedMediaHint %>"
+              multiple
+              class="hidden"
+            />
+            <div class="text-sm font-semibold text-slate-900 dark:text-white">Drop file di sini atau klik untuk memilih</div>
             <div data-file-label="dashboard-upload" class="mt-1 text-sm text-slate-500 dark:text-slate-400">
               Belum ada file dipilih
             </div>
+            <div class="mt-3 text-xs text-slate-500 dark:text-slate-400">
+              Format umum didukung: JPG, PNG, WEBP, GIF, AVIF, HEIC, MP4, MOV, MKV, WEBM, AVI, dan lainnya.
+            </div>
+            <div class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+              Maksimal <%= maxFilesPerRequest %> file per upload, hingga <%= maxUploadSizeMb %> MB per file.
+            </div>
           </label>
-          <button type="submit" class="btn-primary w-full">Upload Sekarang</button>
+
+          <div class="hidden" data-upload-progress>
+            <div class="progress-shell h-3">
+              <div class="progress-bar w-0" data-upload-progress-bar></div>
+            </div>
+            <div class="mt-2 flex items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
+              <span data-upload-progress-text>Menyiapkan upload...</span>
+              <span data-upload-progress-percent>0%</span>
+            </div>
+          </div>
+
+          <div class="hidden rounded-2xl border px-4 py-3 text-sm" data-upload-feedback></div>
+
+          <button type="submit" class="btn-primary w-full" data-upload-submit>Upload Sekarang</button>
         </form>
       </div>
 
@@ -89,9 +119,29 @@
         <span class="chip"><%= rootMediaPage.items.length %> item</span>
       </div>
 
+      <form action="/dashboard" method="get" class="mt-5 flex flex-col gap-3 sm:flex-row">
+        <input
+          name="q"
+          type="search"
+          value="<%= mediaQuery %>"
+          class="input"
+          placeholder="Cari berdasarkan nama file, misalnya liburan-2026 atau video-event"
+        />
+        <button type="submit" class="btn-secondary shrink-0">Cari Nama File</button>
+        <% if (mediaQuery) { %>
+          <a href="/dashboard" class="btn-secondary shrink-0">Reset</a>
+        <% } %>
+      </form>
+
+      <% if (mediaQuery) { %>
+        <div class="mt-4 text-sm text-slate-500 dark:text-slate-400">
+          Hasil pencarian untuk nama file: <span class="font-semibold text-slate-900 dark:text-white"><%= mediaQuery %></span>
+        </div>
+      <% } %>
+
       <% if (rootMediaPage.items.length === 0) { %>
         <div class="panel-muted mt-5 p-8 text-center text-sm text-slate-500 dark:text-slate-400">
-          Belum ada media di root. Anda bisa upload langsung dari panel di atas.
+          <%= mediaQuery ? 'Tidak ada media root yang cocok dengan pencarian ini.' : 'Belum ada media di root. Anda bisa upload langsung dari panel di atas.' %>
         </div>
       <% } else { %>
         <div class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -102,7 +152,7 @@
 
         <% if (rootMediaPage.hasMore && rootMediaPage.nextCursor) { %>
           <div class="mt-6 flex justify-center">
-            <a href="/dashboard?cursor=<%= encodeURIComponent(rootMediaPage.nextCursor) %>" class="btn-secondary">
+            <a href="/dashboard?cursor=<%= encodeURIComponent(rootMediaPage.nextCursor) %><%= mediaQuery ? `&q=${encodeURIComponent(mediaQuery)}` : '' %>" class="btn-secondary">
               Muat Media Root Berikutnya
             </a>
           </div>

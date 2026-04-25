@@ -3,9 +3,11 @@
 Galeri self-hosted berbasis Node.js, EJS, Tailwind, dan MariaDB dengan fitur dasar ala Immich:
 
 - Upload foto dan video ke folder logis bertingkat
+- Drag-and-drop upload dengan progress bar
 - Role sederhana `admin` dan `user`
 - Thumbnail untuk gambar dan video
 - Playback video dengan dukungan seek/range streaming
+- Search media berdasarkan nama file
 - UI modern, mobile friendly, tema terang dan gelap
 - Siap dijalankan via Docker Compose
 
@@ -15,6 +17,10 @@ Galeri self-hosted berbasis Node.js, EJS, Tailwind, dan MariaDB dengan fitur das
 - File asli disimpan ke storage yang di-shard per tanggal dan prefix acak.
 - Thumbnail disimpan terpisah.
 - Listing media memakai cursor pagination, jadi tetap aman saat satu folder logis berisi sampai 10 ribu item.
+
+## Dokumentasi
+
+Dokumentasi lengkap tersedia di [dokumentasi/README.md](D:/code/nodejs/full-stack/Cloud-Gallery/dokumentasi/README.md).
 
 ## Jalankan Lokal
 
@@ -56,3 +62,4 @@ Aplikasi tersedia di `http://localhost:3000`.
 - Untuk video thumbnail dan metadata, container aplikasi menginstall `ffmpeg`.
 - Media tidak diekspos langsung sebagai static file; akses lewat route terproteksi.
 - Untuk folder besar, UI hanya memuat batch kecil dengan cursor `nextCursor`.
+- Format seperti `mkv`, `mov`, dan `avi` dapat diupload, tetapi hasil playback tetap mengikuti dukungan browser dan codec file.

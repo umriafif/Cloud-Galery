@@ -2,6 +2,24 @@ const bcrypt = require('bcryptjs');
 const env = require('../config/env');
 const { query } = require('./pool');
 
+async function ensureIndex(tableName, indexName, ddl) {
+  const rows = await query(
+    `
+      SELECT 1
+      FROM information_schema.statistics
+      WHERE table_schema = DATABASE()
+        AND table_name = ?
+        AND index_name = ?
+      LIMIT 1
+    `,
+    [tableName, indexName]
+  );
+
+  if (rows.length === 0) {
+    await query(ddl);
+  }
+}
+
 async function migrate() {
   await query(`
     CREATE TABLE IF NOT EXISTS users (
@@ -64,6 +82,18 @@ async function migrate() {
       CONSTRAINT fk_media_uploaded_by FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
+
+  await ensureIndex(
+    'media',
+    'idx_media_folder_name',
+    'ALTER TABLE media ADD INDEX idx_media_folder_name (folder_id, original_name)'
+  );
+
+  await ensureIndex(
+    'media',
+    'idx_media_owner_name',
+    'ALTER TABLE media ADD INDEX idx_media_owner_name (owner_id, original_name)'
+  );
 
   const adminEmail = env.defaultAdmin.email.trim().toLowerCase();
   const existing = await query('SELECT id FROM users WHERE email = ? LIMIT 1', [adminEmail]);

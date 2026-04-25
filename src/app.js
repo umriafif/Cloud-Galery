@@ -12,6 +12,7 @@ const dashboardRoutes = require('./routes/dashboard');
 const folderRoutes = require('./routes/folders');
 const mediaRoutes = require('./routes/media');
 const adminRoutes = require('./routes/admin');
+const { wantsJsonResponse } = require('./utils/request');
 
 function createApp() {
   const app = express();
@@ -81,6 +82,15 @@ function createApp() {
         ? 'Ukuran file melebihi batas upload.'
         : 'Upload gagal diproses.';
 
+      if (wantsJsonResponse(req)) {
+        res.status(400).json({
+          ok: false,
+          statusCode: 400,
+          message: reason
+        });
+        return;
+      }
+
       res.status(400).render('error', {
         title: 'Upload Gagal',
         statusCode: 400,
@@ -90,6 +100,16 @@ function createApp() {
     }
 
     const statusCode = error.statusCode || 500;
+
+    if (wantsJsonResponse(req)) {
+      res.status(statusCode).json({
+        ok: false,
+        statusCode,
+        message: error.message || 'Terjadi kesalahan yang tidak terduga.'
+      });
+      return;
+    }
+
     res.status(statusCode).render('error', {
       title: statusCode >= 500 ? 'Terjadi Kesalahan' : 'Permintaan Tidak Valid',
       statusCode,
