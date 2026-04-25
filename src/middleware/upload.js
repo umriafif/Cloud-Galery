@@ -19,7 +19,14 @@ function createUploadMiddleware() {
     },
     fileFilter: (req, file, callback) => {
       const allowed = file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/');
-      callback(allowed ? null : new Error('Hanya gambar dan video yang diperbolehkan.'), allowed);
+      if (allowed) {
+        callback(null, true);
+        return;
+      }
+
+      const error = new Error('Hanya gambar dan video yang diperbolehkan.');
+      error.statusCode = 400;
+      callback(error);
     }
   }).array('media_files', env.upload.maxFilesPerRequest);
 }
