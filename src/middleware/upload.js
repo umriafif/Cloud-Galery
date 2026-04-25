@@ -1,3 +1,4 @@
+const fs = require('node:fs/promises');
 const path = require('node:path');
 const multer = require('multer');
 const env = require('../config/env');
@@ -5,7 +6,17 @@ const { isSupportedMediaFile } = require('../utils/media-types');
 
 function createUploadMiddleware() {
   const storage = multer.diskStorage({
-    destination: env.storage.tmpDir,
+    destination: async (req, file, callback) => {
+      // Keep temp upload in the uploads mount to avoid cross-device move in Docker.
+      const tempUploadDir = path.join(env.storage.uploadsDir, '.tmp');
+
+      try {
+        await fs.mkdir(tempUploadDir, { recursive: true });
+        callback(null, tempUploadDir);
+      } catch (error) {
+        callback(error);
+      }
+    },
     filename: (req, file, callback) => {
       const safeName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(file.originalname || '')}`;
       callback(null, safeName);
