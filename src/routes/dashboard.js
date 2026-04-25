@@ -9,6 +9,7 @@ const {
   createMediaFromUpload
 } = require('../services/media-service');
 const { wantsJsonResponse } = require('../utils/request');
+const { renderEjsView } = require('../utils/render-ejs-view');
 
 const router = express.Router();
 
@@ -34,11 +35,41 @@ function buildUploadResponsePayload({ successCount, failed }) {
   };
 }
 
+async function sendMediaPageJson(req, res, mediaPage) {
+  const html = await renderEjsView(req.app, 'partials/media-grid-items', {
+    ...res.locals,
+    items: mediaPage.items
+  });
+
+  res.json({
+    ok: true,
+    html,
+    count: mediaPage.items.length,
+    hasMore: mediaPage.hasMore,
+    nextCursor: mediaPage.nextCursor
+  });
+}
+
 router.get(
   '/dashboard',
   requireAuth,
   asyncHandler(async (req, res) => {
     const mediaQuery = String(req.query.q || '').trim();
+    const isPartialMediaRequest = wantsJsonResponse(req) && req.query.partial === 'media';
+
+    if (isPartialMediaRequest) {
+      const rootMediaPage = await listMediaByFolder({
+        folderId: null,
+        user: req.session.user,
+        cursor: req.query.cursor,
+        limit: 12,
+        search: mediaQuery
+      });
+
+      await sendMediaPageJson(req, res, rootMediaPage);
+      return;
+    }
+
     const [rootFolders, rootMediaPage, folderCount, mediaCount] = await Promise.all([
       listRootFolders(req.session.user),
       listMediaByFolder({

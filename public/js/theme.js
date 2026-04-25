@@ -269,3 +269,141 @@ document.addEventListener('DOMContentLoaded', () => {
     syncLabel();
   }
 });
+
+function updateFileLabel(input, label) {
+  if (!label) {
+    return;
+  }
+
+  if (!input.files?.length) {
+    label.textContent = 'Belum ada file dipilih';
+    return;
+  }
+
+  const totalSize = Array.from(input.files).reduce((sum, file) => sum + (file.size || 0), 0);
+  label.textContent = `${input.files.length} file siap diunggah | ${formatBytes(totalSize)}`;
+}
+
+function setInfiniteScrollStatus(container, message, isLoading) {
+  if (!container) {
+    return;
+  }
+
+  container.textContent = message;
+  container.classList.toggle('infinite-loading', Boolean(isLoading));
+}
+
+function initializeInfiniteScroll() {
+  if (typeof IntersectionObserver === 'undefined' || typeof fetch === 'undefined') {
+    return;
+  }
+
+  document.querySelectorAll('[data-infinite-scroll]').forEach((section) => {
+    const grid = section.querySelector('[data-infinite-grid]');
+    const sentinel = section.querySelector('[data-infinite-sentinel]');
+    const status = section.querySelector('[data-infinite-status]');
+    const fallbackLink = section.querySelector('[data-infinite-fallback]');
+    const fallbackWrapper = section.querySelector('[data-infinite-fallback-wrapper]');
+    const countTargetId = section.dataset.countTarget;
+    const countTarget = countTargetId ? document.getElementById(countTargetId) : null;
+
+    if (!grid || !sentinel) {
+      return;
+    }
+
+    let nextCursor = section.dataset.nextCursor || '';
+    let hasMore = section.dataset.hasMore === 'true';
+    let isLoading = false;
+    let observer;
+
+    if (fallbackWrapper) {
+      fallbackWrapper.classList.add('hidden');
+    }
+
+    if (!hasMore || !nextCursor) {
+      setInfiniteScrollStatus(status, 'Semua media yang tersedia sudah dimuat.', false);
+      return;
+    }
+
+    const loadNextPage = async () => {
+      if (isLoading || !hasMore || !nextCursor) {
+        return;
+      }
+
+      isLoading = true;
+      setInfiniteScrollStatus(status, 'Memuat media berikutnya', true);
+
+      try {
+        const url = new URL(section.dataset.endpoint, window.location.origin);
+        url.searchParams.set('cursor', nextCursor);
+
+        const response = await fetch(url.toString(), {
+          headers: {
+            Accept: 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        });
+
+        const payload = await response.json();
+
+        if (!response.ok || !payload?.ok) {
+          throw new Error(payload?.message || 'Gagal memuat batch media berikutnya.');
+        }
+
+        if (payload.html) {
+          grid.insertAdjacentHTML('beforeend', payload.html);
+        }
+
+        if (countTarget) {
+          const currentCount = Number(countTarget.textContent) || 0;
+          countTarget.textContent = String(currentCount + (Number(payload.count) || 0));
+        }
+
+        nextCursor = payload.nextCursor || '';
+        hasMore = Boolean(payload.hasMore && payload.nextCursor);
+        section.dataset.nextCursor = nextCursor;
+        section.dataset.hasMore = hasMore ? 'true' : 'false';
+
+        if (!hasMore) {
+          setInfiniteScrollStatus(status, 'Semua media yang tersedia sudah dimuat.', false);
+          observer.disconnect();
+          return;
+        }
+
+        setInfiniteScrollStatus(status, 'Scroll ke bawah untuk memuat media berikutnya.', false);
+      } catch (error) {
+        setInfiniteScrollStatus(status, error.message || 'Gagal memuat media berikutnya.', false);
+
+        if (fallbackWrapper && fallbackLink) {
+          const retryUrl = new URL(section.dataset.endpoint, window.location.origin);
+          if (nextCursor) {
+            retryUrl.searchParams.set('cursor', nextCursor);
+          }
+          fallbackLink.href = retryUrl.toString();
+          fallbackWrapper.classList.remove('hidden');
+        }
+      } finally {
+        isLoading = false;
+      }
+    };
+
+    observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            void loadNextPage();
+          }
+        });
+      },
+      {
+        rootMargin: '300px 0px'
+      }
+    );
+
+    observer.observe(sentinel);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  initializeInfiniteScroll();
+});

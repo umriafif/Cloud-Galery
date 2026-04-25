@@ -56,4 +56,9 @@
   .progress-bar {
     @apply h-full rounded-full bg-gradient-to-r from-accent-500 via-cyan-400 to-amber-300 transition-[width] duration-200 ease-out;
   }
+
+  .infinite-loading::after {
+    content: '...';
+    @apply ml-1 inline-block tracking-[0.2em] text-accent-500;
+  }
 }

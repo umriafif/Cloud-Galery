@@ -31,7 +31,28 @@ Search tetap memakai cursor pagination. Artinya:
 
 - hasil tidak di-load semua sekaligus
 - pencarian masih aman saat hasilnya banyak
-- tombol batch berikutnya mempertahankan query search
+- infinite scroll tetap mempertahankan query search
+
+## Infinite Scroll
+
+Infinite scroll aktif pada:
+
+- media root di dashboard
+- media di halaman folder
+
+Implementasinya:
+
+- halaman pertama tetap dirender server-side
+- batch berikutnya diminta sebagai JSON + HTML partial
+- browser mengamati sentinel di bawah grid media
+- saat sentinel terlihat, batch berikutnya diambil otomatis
+
+Fallback:
+
+- bila `IntersectionObserver` atau `fetch` tidak tersedia
+- atau request berikutnya gagal
+
+sistem masih menyediakan link manual untuk memuat batch berikutnya
 
 ## Kesiapan Folder Besar
 

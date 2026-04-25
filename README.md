@@ -4,6 +4,7 @@ Galeri self-hosted berbasis Node.js, EJS, Tailwind, dan MariaDB dengan fitur das
 
 - Upload foto dan video ke folder logis bertingkat
 - Drag-and-drop upload dengan progress bar
+- Infinite scroll untuk listing media
 - Role sederhana `admin` dan `user`
 - Thumbnail untuk gambar dan video
 - Playback video dengan dukungan seek/range streaming
@@ -61,5 +62,5 @@ Aplikasi tersedia di `http://localhost:3000`.
 
 - Untuk video thumbnail dan metadata, container aplikasi menginstall `ffmpeg`.
 - Media tidak diekspos langsung sebagai static file; akses lewat route terproteksi.
-- Untuk folder besar, UI hanya memuat batch kecil dengan cursor `nextCursor`.
+- Untuk folder besar, UI memuat batch media berikutnya otomatis dengan infinite scroll berbasis cursor `nextCursor`.
 - Format seperti `mkv`, `mov`, dan `avi` dapat diupload, tetapi hasil playback tetap mengikuti dukungan browser dan codec file.

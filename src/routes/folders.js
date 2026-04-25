@@ -10,6 +10,7 @@ const {
 } = require('../services/folder-service');
 const { listMediaByFolder, createMediaFromUpload } = require('../services/media-service');
 const { wantsJsonResponse } = require('../utils/request');
+const { renderEjsView } = require('../utils/render-ejs-view');
 
 const router = express.Router();
 
@@ -35,6 +36,21 @@ function buildUploadResponsePayload({ successCount, failed }) {
   };
 }
 
+async function sendMediaPageJson(req, res, mediaPage) {
+  const html = await renderEjsView(req.app, 'partials/media-grid-items', {
+    ...res.locals,
+    items: mediaPage.items
+  });
+
+  res.json({
+    ok: true,
+    html,
+    count: mediaPage.items.length,
+    hasMore: mediaPage.hasMore,
+    nextCursor: mediaPage.nextCursor
+  });
+}
+
 router.post(
   '/folders',
   requireAuth,
@@ -57,14 +73,35 @@ router.get(
   asyncHandler(async (req, res) => {
     const folderId = Number(req.params.id);
     const mediaQuery = String(req.query.q || '').trim();
+    const isPartialMediaRequest = wantsJsonResponse(req) && req.query.partial === 'media';
     const folder = await getFolderByIdForUser(folderId, req.session.user);
 
     if (!folder) {
+      if (isPartialMediaRequest) {
+        res.status(404).json({
+          ok: false,
+          message: 'Folder yang diminta tidak ditemukan atau tidak dapat diakses.'
+        });
+        return;
+      }
+
       res.status(404).render('error', {
         title: 'Folder Tidak Ditemukan',
         statusCode: 404,
         message: 'Folder yang diminta tidak ditemukan atau tidak dapat diakses.'
       });
+      return;
+    }
+
+    if (isPartialMediaRequest) {
+      const mediaPage = await listMediaByFolder({
+        folderId: folder.id,
+        user: req.session.user,
+        cursor: req.query.cursor,
+        search: mediaQuery
+      });
+
+      await sendMediaPageJson(req, res, mediaPage);
       return;
     }
 

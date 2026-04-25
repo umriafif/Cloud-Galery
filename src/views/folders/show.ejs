@@ -103,7 +103,7 @@
           <h2 class="font-display text-2xl font-bold text-slate-900 dark:text-white">Media</h2>
           <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Klik item untuk membuka preview dan detail.</p>
         </div>
-        <span class="chip"><%= mediaPage.items.length %> ditampilkan</span>
+        <span class="chip"><span id="folder-media-count"><%= mediaPage.items.length %></span> ditampilkan</span>
       </div>
 
       <form action="/folders/<%= folder.id %>" method="get" class="mt-5 flex flex-col gap-3 sm:flex-row">
@@ -131,19 +131,36 @@
           <%= mediaQuery ? 'Tidak ada media di folder ini yang cocok dengan pencarian.' : 'Folder ini belum memiliki media.' %>
         </div>
       <% } else { %>
-        <div class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          <% mediaPage.items.forEach((media) => { %>
-            <%- include('../partials/media-card', { media }) %>
-          <% }) %>
-        </div>
-
-        <% if (mediaPage.hasMore && mediaPage.nextCursor) { %>
-          <div class="mt-6 flex justify-center">
-            <a href="/folders/<%= folder.id %>?cursor=<%= encodeURIComponent(mediaPage.nextCursor) %><%= mediaQuery ? `&q=${encodeURIComponent(mediaQuery)}` : '' %>" class="btn-secondary">
-              Muat Batch Berikutnya
-            </a>
+        <div
+          class="mt-5"
+          data-infinite-scroll
+          data-endpoint="/folders/<%= folder.id %>?partial=media<%= mediaQuery ? `&q=${encodeURIComponent(mediaQuery)}` : '' %>"
+          data-next-cursor="<%= mediaPage.nextCursor || '' %>"
+          data-has-more="<%= mediaPage.hasMore ? 'true' : 'false' %>"
+          data-count-target="folder-media-count"
+        >
+          <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" data-infinite-grid>
+            <%- include('../partials/media-grid-items', { items: mediaPage.items }) %>
           </div>
-        <% } %>
+
+          <div class="mt-6 text-center text-sm text-slate-500 dark:text-slate-400" data-infinite-status>
+            <%= mediaPage.hasMore ? 'Scroll ke bawah untuk memuat media berikutnya.' : 'Semua media yang tersedia sudah dimuat.' %>
+          </div>
+
+          <% if (mediaPage.hasMore && mediaPage.nextCursor) { %>
+            <div class="mt-6 flex justify-center" data-infinite-fallback-wrapper>
+              <a
+                href="/folders/<%= folder.id %>?cursor=<%= encodeURIComponent(mediaPage.nextCursor) %><%= mediaQuery ? `&q=${encodeURIComponent(mediaQuery)}` : '' %>"
+                class="btn-secondary"
+                data-infinite-fallback
+              >
+                Muat Batch Berikutnya
+              </a>
+            </div>
+          <% } %>
+
+          <div class="h-4" data-infinite-sentinel aria-hidden="true"></div>
+        </div>
       <% } %>
     </div>
   </div>

@@ -116,7 +116,7 @@
           <h2 class="font-display text-2xl font-bold text-slate-900 dark:text-white">Media Root</h2>
           <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Semua media yang diunggah tanpa folder khusus.</p>
         </div>
-        <span class="chip"><%= rootMediaPage.items.length %> item</span>
+        <span class="chip"><span id="dashboard-media-count"><%= rootMediaPage.items.length %></span> item</span>
       </div>
 
       <form action="/dashboard" method="get" class="mt-5 flex flex-col gap-3 sm:flex-row">
@@ -144,19 +144,36 @@
           <%= mediaQuery ? 'Tidak ada media root yang cocok dengan pencarian ini.' : 'Belum ada media di root. Anda bisa upload langsung dari panel di atas.' %>
         </div>
       <% } else { %>
-        <div class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          <% rootMediaPage.items.forEach((media) => { %>
-            <%- include('../partials/media-card', { media }) %>
-          <% }) %>
-        </div>
-
-        <% if (rootMediaPage.hasMore && rootMediaPage.nextCursor) { %>
-          <div class="mt-6 flex justify-center">
-            <a href="/dashboard?cursor=<%= encodeURIComponent(rootMediaPage.nextCursor) %><%= mediaQuery ? `&q=${encodeURIComponent(mediaQuery)}` : '' %>" class="btn-secondary">
-              Muat Media Root Berikutnya
-            </a>
+        <div
+          class="mt-5"
+          data-infinite-scroll
+          data-endpoint="/dashboard?partial=media<%= mediaQuery ? `&q=${encodeURIComponent(mediaQuery)}` : '' %>"
+          data-next-cursor="<%= rootMediaPage.nextCursor || '' %>"
+          data-has-more="<%= rootMediaPage.hasMore ? 'true' : 'false' %>"
+          data-count-target="dashboard-media-count"
+        >
+          <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" data-infinite-grid>
+            <%- include('../partials/media-grid-items', { items: rootMediaPage.items }) %>
           </div>
-        <% } %>
+
+          <div class="mt-6 text-center text-sm text-slate-500 dark:text-slate-400" data-infinite-status>
+            <%= rootMediaPage.hasMore ? 'Scroll ke bawah untuk memuat media berikutnya.' : 'Semua media yang tersedia sudah dimuat.' %>
+          </div>
+
+          <% if (rootMediaPage.hasMore && rootMediaPage.nextCursor) { %>
+            <div class="mt-6 flex justify-center" data-infinite-fallback-wrapper>
+              <a
+                href="/dashboard?cursor=<%= encodeURIComponent(rootMediaPage.nextCursor) %><%= mediaQuery ? `&q=${encodeURIComponent(mediaQuery)}` : '' %>"
+                class="btn-secondary"
+                data-infinite-fallback
+              >
+                Muat Media Root Berikutnya
+              </a>
+            </div>
+          <% } %>
+
+          <div class="h-4" data-infinite-sentinel aria-hidden="true"></div>
+        </div>
       <% } %>
     </div>
   </div>

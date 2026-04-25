@@ -33,7 +33,6 @@ Workflow yang dipakai:
 
 - delete/move media
 - rename folder/media
-- infinite scroll
 - background queue untuk thumbnail dan transcode
 - transcode video non-browser-friendly ke MP4/HLS
 - fulltext search yang lebih lanjut
