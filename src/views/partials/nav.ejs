@@ -1,0 +1,63 @@
+<header class="border-b border-white/40 bg-white/65 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/65">
+  <div class="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between gap-3">
+      <a href="<%= currentUser ? '/dashboard' : '/login' %>" class="flex items-center gap-3">
+        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-accent-500 text-lg font-black text-white shadow-lg shadow-accent-500/25">
+          CG
+        </div>
+        <div>
+          <div class="font-display text-lg font-bold tracking-tight text-slate-900 dark:text-white">
+            Cloud Gallery
+          </div>
+          <div class="text-xs text-slate-500 dark:text-slate-400">
+            Basic self-hosted media hub
+          </div>
+        </div>
+      </a>
+
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          data-theme-toggle
+          class="btn-secondary px-3 py-2 text-sm"
+        >
+          Tema
+        </button>
+        <% if (currentUser) { %>
+          <form action="/logout" method="post">
+            <button type="submit" class="btn-secondary px-3 py-2 text-sm">Keluar</button>
+          </form>
+        <% } %>
+      </div>
+    </div>
+
+    <% if (currentUser) { %>
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <nav class="flex flex-wrap items-center gap-2 text-sm font-medium">
+          <a
+            href="/dashboard"
+            class="chip <%= currentPath === '/dashboard' ? 'border-accent-300 text-accent-700 dark:border-accent-700 dark:text-accent-300' : '' %>"
+          >
+            Dashboard
+          </a>
+          <% if (currentUser.role === 'admin') { %>
+            <a
+              href="/admin/users"
+              class="chip <%= currentPath.startsWith('/admin') ? 'border-accent-300 text-accent-700 dark:border-accent-700 dark:text-accent-300' : '' %>"
+            >
+              Admin
+            </a>
+          <% } %>
+        </nav>
+
+        <div class="flex items-center gap-2 text-sm">
+          <span class="chip">
+            <span class="h-2 w-2 rounded-full bg-accent-500"></span>
+            <%= currentUser.name %>
+          </span>
+          <span class="chip uppercase"><%= currentUser.role %></span>
+        </div>
+      </div>
+    <% } %>
+  </div>
+</header>

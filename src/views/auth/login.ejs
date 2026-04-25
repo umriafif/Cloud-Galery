@@ -1,0 +1,61 @@
+<section class="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[1.2fr,0.8fr]">
+  <div class="panel relative overflow-hidden p-8 sm:p-10">
+    <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-accent-400 via-cyan-400 to-amber-300"></div>
+    <div class="max-w-xl">
+      <span class="chip">Self-hosted gallery</span>
+      <h1 class="mt-5 font-display text-4xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-5xl">
+        Simpan foto dan video dalam galeri yang rapi, cepat, dan siap tumbuh.
+      </h1>
+      <p class="mt-5 text-base leading-7 text-slate-600 dark:text-slate-300">
+        Folder logis, thumbnail video, role admin dan user, tampilan modern, serta siap jalan di Docker dengan MariaDB.
+      </p>
+
+      <div class="mt-8 grid gap-4 sm:grid-cols-3">
+        <div class="panel-muted p-4">
+          <div class="text-sm font-semibold text-slate-900 dark:text-white">Upload Multi File</div>
+          <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">Foto dan video dalam satu alur.</div>
+        </div>
+        <div class="panel-muted p-4">
+          <div class="text-sm font-semibold text-slate-900 dark:text-white">Thumbnail Video</div>
+          <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">Poster otomatis dari frame video.</div>
+        </div>
+        <div class="panel-muted p-4">
+          <div class="text-sm font-semibold text-slate-900 dark:text-white">Skala Folder Besar</div>
+          <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">Cursor pagination untuk ribuan media.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel p-8 sm:p-10">
+    <div>
+      <h2 class="font-display text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Masuk</h2>
+      <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+        Gunakan akun Anda untuk mengakses galeri.
+      </p>
+    </div>
+
+    <form action="/login" method="post" class="mt-8 space-y-4">
+      <div>
+        <label for="email" class="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200">Email</label>
+        <input id="email" name="email" type="email" class="input" placeholder="admin@cloud-gallery.local" required />
+      </div>
+
+      <div>
+        <label for="password" class="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200">Password</label>
+        <input id="password" name="password" type="password" class="input" placeholder="••••••••" required />
+      </div>
+
+      <button type="submit" class="btn-primary w-full">Masuk ke Dashboard</button>
+    </form>
+
+    <% if (allowPublicRegistration) { %>
+      <p class="mt-6 text-sm text-slate-500 dark:text-slate-400">
+        Belum punya akun?
+        <a href="/register" class="font-semibold text-accent-600 hover:text-accent-700 dark:text-accent-400 dark:hover:text-accent-300">
+          Daftar di sini
+        </a>
+      </p>
+    <% } %>
+  </div>
+</section>

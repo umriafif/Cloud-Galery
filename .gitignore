@@ -1,0 +1,10 @@
+node_modules/
+.env
+npm-debug.log*
+public/assets/app.css
+storage/tmp/*
+storage/uploads/*
+storage/thumbnails/*
+!storage/tmp/.gitkeep
+!storage/uploads/.gitkeep
+!storage/thumbnails/.gitkeep

@@ -1,0 +1,65 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cloud-gallery-app
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      APP_NAME: Cloud Gallery
+      BASE_URL: http://localhost:3000
+      SESSION_SECRET: super_change_me_in_production
+      ALLOW_PUBLIC_REGISTRATION: "true"
+      MAX_UPLOAD_SIZE_MB: 1024
+      MAX_FILES_PER_UPLOAD: 50
+      GALLERY_PAGE_SIZE: 60
+      DASHBOARD_RECENT_SIZE: 12
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      DB_NAME: cloud_gallery
+      DB_USER: gallery
+      DB_PASSWORD: gallery_secret
+      DEFAULT_ADMIN_NAME: Administrator
+      DEFAULT_ADMIN_EMAIL: admin@cloud-gallery.local
+      DEFAULT_ADMIN_PASSWORD: ChangeMe123!
+    ports:
+      - "3000:3000"
+    volumes:
+      - gallery_uploads:/app/storage/uploads
+      - gallery_thumbnails:/app/storage/thumbnails
+      - gallery_tmp:/app/storage/tmp
+    restart: unless-stopped
+
+  mariadb:
+    image: mariadb:11.8
+    container_name: cloud-gallery-db
+    environment:
+      MARIADB_DATABASE: cloud_gallery
+      MARIADB_USER: gallery
+      MARIADB_PASSWORD: gallery_secret
+      MARIADB_ROOT_PASSWORD: root_secret
+    ports:
+      - "3307:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mariadb-admin ping -h 127.0.0.1 -u$$MARIADB_USER -p$$MARIADB_PASSWORD --silent"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    restart: unless-stopped
+
+volumes:
+  mariadb_data:
+  gallery_uploads:
+  gallery_thumbnails:
+  gallery_tmp:

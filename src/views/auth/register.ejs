@@ -1,0 +1,35 @@
+<section class="mx-auto max-w-2xl">
+  <div class="panel p-8 sm:p-10">
+    <div class="max-w-xl">
+      <span class="chip">Public registration</span>
+      <h1 class="mt-5 font-display text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+        Buat akun user baru
+      </h1>
+      <p class="mt-3 text-sm leading-7 text-slate-500 dark:text-slate-400">
+        Akun yang dibuat lewat halaman ini otomatis memiliki role `user`. Admin dapat mengubah role dari panel admin.
+      </p>
+    </div>
+
+    <form action="/register" method="post" class="mt-8 grid gap-4">
+      <div>
+        <label for="name" class="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200">Nama</label>
+        <input id="name" name="name" type="text" class="input" placeholder="Nama lengkap" required />
+      </div>
+
+      <div>
+        <label for="email" class="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200">Email</label>
+        <input id="email" name="email" type="email" class="input" placeholder="nama@contoh.com" required />
+      </div>
+
+      <div>
+        <label for="password" class="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200">Password</label>
+        <input id="password" name="password" type="password" class="input" placeholder="Minimal 8 karakter" required />
+      </div>
+
+      <div class="flex flex-col gap-3 pt-2 sm:flex-row">
+        <button type="submit" class="btn-primary">Buat Akun</button>
+        <a href="/login" class="btn-secondary">Kembali ke Login</a>
+      </div>
+    </form>
+  </div>
+</section>

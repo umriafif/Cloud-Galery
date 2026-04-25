@@ -1,0 +1,100 @@
+<section class="grid gap-6">
+  <div class="panel p-6 sm:p-8">
+    <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+      <div class="min-w-0">
+        <div class="flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+          <a href="/dashboard" class="hover:text-accent-600 dark:hover:text-accent-400">Dashboard</a>
+          <% breadcrumbs.forEach((crumb) => { %>
+            <span>/</span>
+            <a href="/folders/<%= crumb.id %>" class="hover:text-accent-600 dark:hover:text-accent-400"><%= crumb.name %></a>
+          <% }) %>
+        </div>
+
+        <div class="mt-4 flex flex-wrap items-center gap-3">
+          <h1 class="font-display text-3xl font-bold tracking-tight text-slate-900 dark:text-white"><%= folder.name %></h1>
+          <span class="chip">Owner: <%= folder.owner_name %></span>
+        </div>
+
+        <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+          Halaman folder memuat subfolder dan media secara bertahap. Untuk folder dengan ribuan item, sistem hanya mengambil batch kecil berdasarkan cursor agar tetap responsif.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid gap-6 lg:grid-cols-[0.9fr,1.1fr]">
+    <div class="grid gap-6">
+      <div class="panel p-6">
+        <h2 class="font-display text-xl font-bold text-slate-900 dark:text-white">Tambah Subfolder</h2>
+        <form action="/folders" method="post" class="mt-5 flex flex-col gap-3">
+          <input type="hidden" name="parent_id" value="<%= folder.id %>" />
+          <input name="name" type="text" class="input" placeholder="Nama subfolder" required />
+          <button type="submit" class="btn-secondary">Buat Subfolder</button>
+        </form>
+      </div>
+
+      <div class="panel p-6">
+        <h2 class="font-display text-xl font-bold text-slate-900 dark:text-white">Upload ke Folder</h2>
+        <form action="/folders/<%= folder.id %>/upload" method="post" enctype="multipart/form-data" class="mt-5 space-y-4">
+          <label class="panel-muted block cursor-pointer border-dashed p-5 text-center transition hover:border-accent-300 dark:hover:border-accent-700">
+            <input id="folder-upload" data-file-input type="file" name="media_files" multiple class="hidden" />
+            <div class="text-sm font-semibold text-slate-900 dark:text-white">Pilih foto atau video</div>
+            <div data-file-label="folder-upload" class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              Belum ada file dipilih
+            </div>
+          </label>
+          <button type="submit" class="btn-primary w-full">Upload ke Folder Ini</button>
+        </form>
+      </div>
+
+      <div class="panel p-6">
+        <div class="flex items-center justify-between gap-3">
+          <h2 class="font-display text-xl font-bold text-slate-900 dark:text-white">Subfolder</h2>
+          <span class="chip"><%= subfolders.length %> item</span>
+        </div>
+
+        <% if (subfolders.length === 0) { %>
+          <div class="panel-muted mt-5 p-6 text-sm text-slate-500 dark:text-slate-400">
+            Belum ada subfolder di dalam lokasi ini.
+          </div>
+        <% } else { %>
+          <div class="mt-5 grid gap-4">
+            <% subfolders.forEach((item) => { %>
+              <%- include('../partials/folder-card', { folder: item }) %>
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="panel p-6">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <h2 class="font-display text-2xl font-bold text-slate-900 dark:text-white">Media</h2>
+          <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Klik item untuk membuka preview dan detail.</p>
+        </div>
+        <span class="chip"><%= mediaPage.items.length %> ditampilkan</span>
+      </div>
+
+      <% if (mediaPage.items.length === 0) { %>
+        <div class="panel-muted mt-5 p-8 text-center text-sm text-slate-500 dark:text-slate-400">
+          Folder ini belum memiliki media.
+        </div>
+      <% } else { %>
+        <div class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <% mediaPage.items.forEach((media) => { %>
+            <%- include('../partials/media-card', { media }) %>
+          <% }) %>
+        </div>
+
+        <% if (mediaPage.hasMore && mediaPage.nextCursor) { %>
+          <div class="mt-6 flex justify-center">
+            <a href="/folders/<%= folder.id %>?cursor=<%= encodeURIComponent(mediaPage.nextCursor) %>" class="btn-secondary">
+              Muat Batch Berikutnya
+            </a>
+          </div>
+        <% } %>
+      <% } %>
+    </div>
+  </div>
+</section>
