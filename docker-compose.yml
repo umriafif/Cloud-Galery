@@ -42,8 +42,6 @@ services:
       MARIADB_USER: gallery
       MARIADB_PASSWORD: gallery_secret
       MARIADB_ROOT_PASSWORD: root_secret
-    ports:
-      - "3307:3306"
     volumes:
       - mariadb_data:/var/lib/mysql
     healthcheck:

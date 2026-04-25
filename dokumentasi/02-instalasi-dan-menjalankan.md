@@ -47,7 +47,8 @@ docker compose up --build
 Service default:
 
 - App: `http://localhost:3000`
-- MariaDB host port: `3307`
+- MariaDB tidak dipublish ke host
+- App tetap terhubung ke MariaDB internal lewat network Docker pada host `mariadb:3306`
 
 ## Akun Admin Default
 
